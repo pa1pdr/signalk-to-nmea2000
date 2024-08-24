@@ -2,6 +2,7 @@ const _ = require('lodash')
 
 const static_keys = [
   "name",
+  "callsign",
   "design.aisShipType",
   "design.draft",
   "design.length",
@@ -227,20 +228,14 @@ function generateStatic(vessel, mmsi, delta) {
   var draft = _.get(findDeltaValue(vessel, delta, 'design.draft'), 'maximum')
   var imo = findDeltaValue(vessel, delta, 'registrations.imo')
   var dest = findDeltaValue(vessel, delta, 'navigation.destination.commonName')
-  /*
-  type = _.isUndefined(type) ? 0 : type
-  callsign = fillASCII(callsign ? callsign : '0', 7)
-  name = fillASCII(name ? name : '0', 20)
-  length = length ? length * 10 : 0xffff;
-  beam = beam ? beam * 10 : 0xffff;
-  draft = _.isUndefined(draft) ? 0xffff : draft * 100
-  */
+
+
 
   if ( _.isUndefined(imo) ) {
     imo = 0
   } else {
-    var parts = imo.split(imo)
-    imo = Number(parts[parts.length-1])
+      imo = imo.split(' ').pop()
+      imo = parseInt (imo,10)
   }
 
   var fromStarboard
@@ -249,15 +244,16 @@ function generateStatic(vessel, mmsi, delta) {
   }
   fromBow = fromBow ? fromBow : undefined
 
-  //2017-04-15T14:58:37.625Z,6,129794,43,255,76,05,28,e0,42,0f,0f,ee,8c,00,39,48,41,33,37,39,35,41,54,4c,41,4e,54,49,43,20,50,52,4f,4a,45,43,54,20,49,49,40,4f,8a,07,18,01,8c,00,fe,06,de,44,00,cc,bf,19,e8,03,52,55,20,4c,45,44,20,3e,20,55,53,20,42,41,4c,40,40,40,40,40,04,00,ff
-
+ 
   mmsi = parseInt(mmsi, 10)
 
+ 
   return {
     pgn: static_pgn,
     'Message ID': 5,
-    //'Repeat indicator': 0,
+    'Repeat indicator': 0,
     'User ID': mmsi,
+    'IMO number': imo,
     'Callsign': callsign,
     'Name': name,
     'Type of ship': type,
@@ -268,6 +264,7 @@ function generateStatic(vessel, mmsi, delta) {
     'Draft': draft,
     'Destination': dest,
     'AIS version indicator': 0,
+    'GNSS type': 1,
     'DTE': 0,
     'AIS Transceiver information': 0
   }
@@ -318,6 +315,8 @@ function generatePosition(vessel, mmsi, delta) {
     if ( heading > Math.PI*2 ) {
       heading = undefined
     }
+
+    mmsi = parseInt(mmsi, 10)  // let's be consistent
     
     /*
     cog = _.isUndefined(cog) ? 0xffff : (Math.trunc(cog * 10000))
@@ -352,7 +351,7 @@ function generatePosition(vessel, mmsi, delta) {
     return {
       pgn: position_pgn,
       'Message ID': 1,
-      //'Repeat Indicator': 0,
+      'Repeat Indicator': 0,
       'User ID': mmsi,
       'Longitude': position.longitude,
       'Latitude': position.latitude,
@@ -546,7 +545,7 @@ function fillASCII(theString, len)
   }
   for ( ; i < len; i++ )
   {
-    res.push(0x40)
+    res.push(0x2A)
   }
   return new Buffer(new Uint8Array(res).buffer);
 }
